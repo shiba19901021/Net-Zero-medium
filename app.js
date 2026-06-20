@@ -91,8 +91,10 @@ function initDashboard() {
       state.mode = el.dataset.mode;
     });
   });
-  // Default mode
-  document.querySelector('.mode-btn[data-mode="past"]').style.borderColor = 'var(--primary)';
+  // Restore mode
+  const modeBtn = document.querySelector(`.mode-btn[data-mode="${state.mode}"]`);
+  if (modeBtn) modeBtn.style.borderColor = 'var(--primary)';
+  else document.querySelector('.mode-btn[data-mode="past"]').style.borderColor = 'var(--primary)';
 
   // Feedback mode buttons
   document.querySelectorAll('.feedback-btn').forEach(el => {
@@ -101,6 +103,12 @@ function initDashboard() {
       el.classList.add('active');
     });
   });
+  // Restore feedback mode
+  const fbBtn = document.querySelector(`.feedback-btn[data-fb="${state.feedbackMode}"]`);
+  if (fbBtn) {
+    document.querySelectorAll('.feedback-btn').forEach(b => b.classList.remove('active'));
+    fbBtn.classList.add('active');
+  }
 
   // Count slider
   const slider = $('count-slider');
@@ -342,11 +350,23 @@ function renderQuestion(index) {
       ? q.answers.map(ai => letters[ai]).join('、')
       : letters[q.answer];
 
+    const wrong = LS.get('wrong', {});
+    const wrongCnt = wrong[q.id];
+    let streakHtml = '';
+    if (isCorrect && wrongCnt !== undefined) {
+      const remain = 5 - wrongCnt;
+      streakHtml = remain > 0
+        ? `<div style="font-size:.8rem;margin-top:4px;color:var(--primary);">📊 連續答對 ${wrongCnt}/5 次，再對 ${remain} 次即可移出錯題庫</div>`
+        : `<div style="font-size:.8rem;margin-top:4px;color:var(--success);">📊 連續答對 5/5 次，已移出錯題庫 🎉</div>`;
+    } else if (!isCorrect && wrong[q.id] !== undefined) {
+      streakHtml = `<div style="font-size:.8rem;margin-top:4px;color:var(--error);">📊 答錯，連續答對次數已歸零</div>`;
+    }
+
     let resultHtml = isCorrect
       ? '<span class="result-tag correct">✅ 答對了！</span>'
       : `<span class="result-tag wrong">❌ 答錯了，正確答案：${correctStr}</span>`;
 
-    expEl.innerHTML = resultHtml + '<div>' + q.explanation + '</div>';
+    expEl.innerHTML = resultHtml + streakHtml + '<div>' + q.explanation + '</div>';
     expEl.style.display = 'block';
     state.answered = true;
   } else {
