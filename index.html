@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>iPASS 淨零規劃管理師 中級 - 刷題系統</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== DASHBOARD ===== -->
+  <div id="dashboard" class="view">
+    <header class="dash-header">
+      <h1>淨零規劃管理師 <span class="badge">中級</span></h1>
+      <p class="dash-sub">iPASS 刷題系統</p>
+      <p class="exam-date">考試日期：115 / 08 / 22</p>
+    </header>
+
+    <!-- Subject Tabs -->
+    <div class="subject-tabs">
+      <button class="sub-tab active" data-sub="1">考科一<br><small>節能減碳技術實務</small></button>
+      <button class="sub-tab" data-sub="2">考科二<br><small>碳管理制度實務</small></button>
+    </div>
+
+    <!-- Progress Cards -->
+    <div class="prog-grid" id="prog-grid">
+      <div class="prog-card" data-sub="1">
+        <div class="prog-label">考古題進度</div>
+        <div class="prog-val" id="prog-past-s1">0/0</div>
+        <div class="prog-bar"><div id="prog-past-bar-s1"></div></div>
+      </div>
+      <div class="prog-card" data-sub="1">
+        <div class="prog-label">AI 模擬題進度</div>
+        <div class="prog-val" id="prog-ai-s1">0/0</div>
+        <div class="prog-bar"><div id="prog-ai-bar-s1"></div></div>
+      </div>
+      <div class="prog-card" data-sub="2" style="display:none">
+        <div class="prog-label">考古題進度</div>
+        <div class="prog-val" id="prog-past-s2">0/0</div>
+        <div class="prog-bar"><div id="prog-past-bar-s2"></div></div>
+      </div>
+      <div class="prog-card" data-sub="2" style="display:none">
+        <div class="prog-label">AI 模擬題進度</div>
+        <div class="prog-val" id="prog-ai-s2">0/0</div>
+        <div class="prog-bar"><div id="prog-ai-bar-s2"></div></div>
+      </div>
+    </div>
+
+    <!-- Mode Selection -->
+    <div class="section-title">練習模式</div>
+    <div class="mode-grid">
+      <button class="mode-btn" data-mode="past">
+        <span class="mode-icon">📚</span>
+        <span class="mode-label">考古題</span>
+        <span class="mode-sub">真實考題演練</span>
+      </button>
+      <button class="mode-btn" data-mode="ai">
+        <span class="mode-icon">🤖</span>
+        <span class="mode-label">AI 模擬題</span>
+        <span class="mode-sub">深度練習題庫</span>
+      </button>
+      <button class="mode-btn" data-mode="mix">
+        <span class="mode-icon">🎯</span>
+        <span class="mode-label">混合模式</span>
+        <span class="mode-sub">考古+AI 隨機</span>
+      </button>
+      <button class="mode-btn" data-mode="wrong">
+        <span class="mode-icon">🔄</span>
+        <span class="mode-label">錯題複習</span>
+        <span class="mode-sub">針對弱點加強</span>
+      </button>
+    </div>
+
+    <!-- Feedback Mode -->
+    <div class="section-title">答題模式</div>
+    <div class="mode-grid">
+      <button class="mode-btn feedback-btn active" data-fb="instant">
+        <span class="mode-icon">⚡</span>
+        <span class="mode-label">立即解析</span>
+        <span class="mode-sub">每題作答後馬上顯示答案</span>
+      </button>
+      <button class="mode-btn feedback-btn" data-fb="exam">
+        <span class="mode-icon">📝</span>
+        <span class="mode-label">考試模式</span>
+        <span class="mode-sub">全部交卷後統一對答案</span>
+      </button>
+    </div>
+
+    <!-- Question Count Slider -->
+    <div class="section-title">每次題數</div>
+    <div class="slider-card">
+      <div class="slider-row">
+        <span>題數</span>
+        <span class="slider-val" id="count-display">50</span>
+      </div>
+      <input type="range" id="count-slider" min="5" max="50" step="5" value="50">
+      <div class="slider-labels">
+        <span>5</span><span>10</span><span>15</span><span>20</span><span>25</span><span>30</span><span>35</span><span>40</span><span>45</span><span>50</span>
+      </div>
+    </div>
+
+    <!-- Start Button -->
+    <button id="start-btn" class="start-btn">開始測驗</button>
+
+    <!-- Extra Buttons -->
+    <div class="extra-row">
+      <button id="history-btn" class="extra-btn">📊 歷史紀錄</button>
+      <button id="sync-btn" class="extra-btn">🔄 同步進度</button>
+    </div>
+  </div>
+
+  <!-- ===== EXAM VIEW ===== -->
+  <div id="exam-view" class="view" style="display:none">
+    <header class="exam-top">
+      <button id="exam-back" class="icon-btn">←</button>
+      <span id="exam-progress">第 1 題 / 共 20 題</span>
+      <button id="exam-submit" class="submit-btn">交卷</button>
+    </header>
+    <div class="exam-bar"><div id="exam-bar-inner"></div></div>
+
+    <main class="exam-main">
+      <div class="q-badge" id="q-badge">考古題</div>
+      <div class="q-scenario" id="q-scenario" style="display:none"></div>
+      <h2 class="q-text" id="q-text">題目載入中...</h2>
+      <div class="q-options" id="q-options"></div>
+      <div class="q-explanation" id="q-explanation" style="display:none"></div>
+    </main>
+
+    <nav class="exam-nav">
+      <button id="prev-btn" class="nav-btn" disabled>‹ 上一題</button>
+      <button id="flag-btn" class="nav-btn flag-btn">🔖 標記</button>
+      <button id="next-btn" class="nav-btn">下一題 ›</button>
+    </nav>
+
+    <div class="q-dots" id="q-dots"></div>
+  </div>
+
+  <!-- ===== RESULT VIEW ===== -->
+  <div id="result-view" class="view" style="display:none">
+    <header class="result-header">
+      <h2>測驗結果</h2>
+      <button id="result-dash-btn" class="icon-btn">← 回首頁</button>
+    </header>
+    <div class="score-section">
+      <div class="score-circle" id="score-circle">
+        <span class="score-num" id="score-num">0</span>
+        <span class="score-unit">分</span>
+      </div>
+      <div class="score-detail" id="score-detail">0 / 0 答對</div>
+    </div>
+    <div class="filter-row">
+      <button class="filter-btn active" data-f="all">全部</button>
+      <button class="filter-btn" data-f="correct">✅ 答對</button>
+      <button class="filter-btn" data-f="wrong">❌ 答錯</button>
+      <button class="filter-btn" data-f="flagged">🔖 已標記</button>
+    </div>
+    <div id="review-list"></div>
+  </div>
+
+  <!-- ===== HISTORY VIEW ===== -->
+  <div id="history-view" class="view" style="display:none">
+    <header class="result-header">
+      <h2>歷史紀錄</h2>
+      <button id="history-dash-btn" class="icon-btn">← 回首頁</button>
+    </header>
+    <button id="clear-history-btn" class="danger-btn">🗑 清除所有紀錄</button>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- ===== SYNC MODAL ===== -->
+  <div id="sync-modal" class="modal" style="display:none">
+    <div class="modal-content">
+      <h3>進度同步</h3>
+      <button id="export-sync-btn" class="primary-btn">📤 產生同步代碼</button>
+      <button id="import-sync-btn" class="primary-btn">📥 匯入同步代碼</button>
+      <textarea id="sync-area" placeholder="請貼上同步代碼..." style="display:none"></textarea>
+      <button id="confirm-import-btn" class="primary-btn" style="display:none">確認匯入</button>
+      <div id="sync-status"></div>
+      <button id="close-sync-btn" class="secondary-btn">關閉</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="questions-s1.js"></script>
+<script src="questions-s2.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
