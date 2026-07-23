@@ -309,3 +309,57 @@ input[type="range"]::-webkit-slider-thumb {
   .exam-nav { padding: 8px 8px; }
   .nav-btn { padding: 8px 12px; font-size: .8rem; }
 }
+
+/* ===== Phase Panel ===== */
+.phase-panel {
+  margin-top: 12px;
+  animation: fadeIn .25s ease;
+}
+.phase-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.phase-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all .2s;
+  text-align: center;
+}
+.phase-card:active { transform: scale(.97); }
+.phase-card.active {
+  border-color: var(--primary);
+  background: var(--surface2);
+}
+.phase-card .phase-name {
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.phase-card .phase-info {
+  font-size: .75rem;
+  color: var(--text-dim);
+}
+.phase-card .phase-progress {
+  margin-top: 6px;
+  height: 4px;
+  background: var(--surface3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.phase-card .phase-progress-bar {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 2px;
+  transition: width .3s;
+}
+.phase-card .phase-stats {
+  font-size: .7rem;
+  color: var(--text-dimmer);
+  margin-top: 4px;
+}
+}

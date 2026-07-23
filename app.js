@@ -11,6 +11,7 @@ let state = {
   submitted: false,
   feedbackMode: 'instant',
   confirmed: new Set(),
+  phase: null,  // selected phase (1-5)
 };
 
 /* ===== Helpers ===== */
@@ -25,6 +26,21 @@ const LS = {
 /* ===== Data ===== */
 function allQuestions(subject) {
   return subject === 1 ? [...window.QUESTIONS_S1 || []] : [...window.QUESTIONS_S2 || []];
+}
+
+function getPhases(subject) {
+  return subject === 1 ? [...(window.PHASES_S1 || [])] : [...(window.PHASES_S2 || [])];
+}
+
+function getPhaseProgress(subject, phaseId) {
+  const stats = LS.get('stats', {});
+  const phases = getPhases(subject);
+  const phase = phases.find(p => p.id === phaseId);
+  if (!phase) return { done: 0, total: 0, correct: 0, pct: 0 };
+  const total = phase.questionIds.length;
+  const done = phase.questionIds.filter(id => stats[id]).length;
+  const correct = phase.questionIds.filter(id => stats[id] && stats[id].correct).length;
+  return { done, total, correct, pct: total ? Math.round(done / total * 100) : 0 };
 }
 
 const S1_CHAPTER_NAMES = {
@@ -79,7 +95,9 @@ function initDashboard() {
       document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
       el.classList.add('active');
       state.subject = parseInt(el.dataset.sub);
+      state.phase = null;
       updateProgress();
+      renderPhasePanel();
     });
   });
 
@@ -89,6 +107,7 @@ function initDashboard() {
       document.querySelectorAll('.mode-btn').forEach(b => b.style.borderColor = '');
       el.style.borderColor = 'var(--primary)';
       state.mode = el.dataset.mode;
+      $('phase-panel').style.display = state.mode === 'phase' ? 'block' : 'none';
     });
   });
   // Restore mode
@@ -141,6 +160,7 @@ function initDashboard() {
   });
 
   updateProgress();
+  renderPhasePanel();
 }
 
 function updateProgress() {
@@ -168,6 +188,33 @@ function updateProgress() {
   });
 }
 
+/* ===== Phase Panel ===== */
+function renderPhasePanel() {
+  const container = $('phase-grid');
+  if (!container) return;
+  container.innerHTML = '';
+  const phases = getPhases(state.subject);
+  const stats = LS.get('stats', {});
+
+  phases.forEach(p => {
+    const prog = getPhaseProgress(state.subject, p.id);
+    const card = document.createElement('div');
+    card.className = 'phase-card' + (state.phase === p.id ? ' active' : '');
+    card.innerHTML = `
+      <div class="phase-name">${p.name}</div>
+      <div class="phase-info">${p.questionIds.length} 題</div>
+      <div class="phase-progress"><div class="phase-progress-bar" style="width:${prog.pct}%"></div></div>
+      <div class="phase-stats">${prog.done}/${prog.total} 已完成 · ${prog.correct} 答對</div>
+    `;
+    card.addEventListener('click', () => {
+      state.phase = p.id;
+      container.querySelectorAll('.phase-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+    });
+    container.appendChild(card);
+  });
+}
+
 /* ===== Start Exam ===== */
 function startExam() {
   const s = state.subject;
@@ -182,7 +229,15 @@ function startExam() {
     const wrong = LS.get('wrong', {});
     const wrongIds = Object.keys(wrong);
     pool = all.filter(q => wrongIds.includes(q.id));
-    if (pool.length === 0) { alert('🎉 你目前沒有錯題！'); return; }
+    if (pool.length === 0) { alert('你目前沒有錯題！'); return; }
+  }
+  else if (mode === 'phase') {
+    if (!state.phase) { alert('請先選擇階段！'); return; }
+    const phases = getPhases(s);
+    const phase = phases.find(p => p.id === state.phase);
+    if (!phase) { alert('階段資料載入失敗'); return; }
+    pool = phase.questionIds.map(id => all.find(q => q.id === id)).filter(Boolean);
+    state.count = pool.length;
   }
 
   if (pool.length === 0) { alert('該題庫目前沒有題目'); return; }
