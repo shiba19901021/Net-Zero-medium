@@ -88,7 +88,9 @@ function showView(id) {
 }
 
 /* ===== Dashboard ===== */
-function initDashboard() {
+let dashboardInited = false;
+
+function setupDashboard() {
   // Subject tabs
   document.querySelectorAll('.sub-tab').forEach(el => {
     el.addEventListener('click', () => {
@@ -110,10 +112,6 @@ function initDashboard() {
       $('phase-panel').style.display = state.mode === 'phase' ? 'block' : 'none';
     });
   });
-  // Restore mode
-  const modeBtn = document.querySelector(`.mode-btn[data-mode="${state.mode}"]`);
-  if (modeBtn) modeBtn.style.borderColor = 'var(--primary)';
-  else document.querySelector('.mode-btn[data-mode="past"]').style.borderColor = 'var(--primary)';
 
   // Feedback mode buttons
   document.querySelectorAll('.feedback-btn').forEach(el => {
@@ -122,12 +120,6 @@ function initDashboard() {
       el.classList.add('active');
     });
   });
-  // Restore feedback mode
-  const fbBtn = document.querySelector(`.feedback-btn[data-fb="${state.feedbackMode}"]`);
-  if (fbBtn) {
-    document.querySelectorAll('.feedback-btn').forEach(b => b.classList.remove('active'));
-    fbBtn.classList.add('active');
-  }
 
   // Count slider
   const slider = $('count-slider');
@@ -151,13 +143,31 @@ function initDashboard() {
   $('confirm-import-btn').addEventListener('click', importSync);
 
   // Result back
-  $('result-dash-btn').addEventListener('click', () => { showView('dashboard'); initDashboard(); });
+  $('result-dash-btn').addEventListener('click', () => { refreshDashboard(); showView('dashboard'); });
   $('history-dash-btn').addEventListener('click', () => showView('dashboard'));
 
   // Clear history
   $('clear-history-btn').addEventListener('click', () => {
     if (confirm('確定清除所有紀錄？')) { LS.set('history', []); renderHistory(); }
   });
+
+  dashboardInited = true;
+}
+
+function refreshDashboard() {
+  // Restore mode button highlight
+  document.querySelectorAll('.mode-btn').forEach(b => b.style.borderColor = '');
+  const modeBtn = document.querySelector(`.mode-btn[data-mode="${state.mode}"]`);
+  if (modeBtn) modeBtn.style.borderColor = 'var(--primary)';
+  else document.querySelector('.mode-btn[data-mode="past"]').style.borderColor = 'var(--primary)';
+
+  // Restore feedback mode
+  document.querySelectorAll('.feedback-btn').forEach(b => b.classList.remove('active'));
+  const fbBtn = document.querySelector(`.feedback-btn[data-fb="${state.feedbackMode}"]`);
+  if (fbBtn) fbBtn.classList.add('active');
+
+  // Restore phase panel visibility
+  $('phase-panel').style.display = state.mode === 'phase' ? 'block' : 'none';
 
   updateProgress();
   renderPhasePanel();
@@ -236,8 +246,11 @@ function startExam() {
     const phases = getPhases(s);
     const phase = phases.find(p => p.id === state.phase);
     if (!phase) { alert('階段資料載入失敗'); return; }
-    pool = phase.questionIds.map(id => all.find(q => q.id === id)).filter(Boolean);
-    state.count = pool.length;
+    const phaseStats = LS.get('stats', {});
+    pool = phase.questionIds
+      .map(id => all.find(q => q.id === id))
+      .filter(q => q && (phaseStats[q.id] || 0) < 5);
+    if (pool.length === 0) { alert('此階段所有題目已精通！🎉'); return; }
   }
 
   if (pool.length === 0) { alert('該題庫目前沒有題目'); return; }
@@ -525,8 +538,11 @@ function showResult() {
   circle.style.background = score >= 70 ? 'var(--success-bg)' : 'var(--error-bg)';
   $('score-num').style.color = score >= 70 ? 'var(--success)' : 'var(--error)';
 
-  // Save stats
-  saveResults(correct, score);
+  // Save stats (skip when loading from history)
+  if (!state.loadingHistory) {
+    saveResults(correct, score);
+  }
+  state.loadingHistory = false;
 
   renderReview('all');
 }
@@ -568,7 +584,7 @@ function saveResults(correct, score) {
   // Save history
   const history = LS.get('history', []);
   const subjName = state.subject === 1 ? '考科一' : '考科二';
-  modeNames = { past: '考古題', ai: 'AI模擬題', mix: '混合題', wrong: '錯題複習' };
+  const modeNames = { past: '考古題', ai: 'AI模擬題', mix: '混合題', wrong: '錯題複習', phase: '階段精選' };
   history.unshift({
     id: Date.now().toString(),
     date: new Date().toLocaleString('zh-TW'),
@@ -689,6 +705,7 @@ function loadHistoryRecord(rec) {
   state.userAnswers = rec.answers || [];
   state.flagged = new Set(rec.flagged || []);
   if (state.questions.length === 0) { alert('無法載入該筆紀錄'); return; }
+  state.loadingHistory = true;
   showResult();
 }
 
@@ -758,6 +775,6 @@ document.addEventListener('keydown', e => {
 
 /* ===== Init ===== */
 document.addEventListener('DOMContentLoaded', () => {
-  initDashboard();
-  updateProgress();
+  setupDashboard();
+  refreshDashboard();
 });
